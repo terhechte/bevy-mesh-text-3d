@@ -12,3 +12,6 @@ bevy = { version = "0.16.0", default-features = false, features = [
 cosmic-text = "0.14.2"
 lyon = "1.0.1"
 thiserror = "2.0.12"
+
+[dev-dependencies]
+bevy = "0.16"

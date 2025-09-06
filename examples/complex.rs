@@ -1,26 +1,23 @@
 use bevy::prelude::*;
 use cosmic_text::{Attrs, Metrics, Style, Weight};
 
-use bevy_mesh_text_3d::{InputText, MeshTextPlugin, Parameters, Settings, generate_meshes};
+use bevy_mesh_text_3d::{
+    HorizontalAnchorPoint, InputText, MeshTextPlugin, Parameters, Settings, VerticalAnchorPoint,
+    generate_meshes,
+};
 
-const CAMERA_VIEWPORT_HEIGHT: f32 = 950.0;
-// This factor controls the overall size of text in the world
-// Adjust this to make your text appear at the desired size
-const TEXT_SCALE_MULTIPLIER: f32 = 4.0;
 // Rotation speed in radians per second
 const ROTATION_SPEED: f32 = 2.0;
 
 // Constants for MovingText
-const MOVE_AMPLITUDE: f32 = 30.0; // Max displacement from the center y-position
+const MOVE_AMPLITUDE: f32 = 0.3; // Max displacement from the center y-position
 const MOVE_PERIOD_SECONDS: f32 = 3.0; // How long one full up-and-down cycle takes
 const MOVE_FREQUENCY: f32 = 2.0 * std::f32::consts::PI / MOVE_PERIOD_SECONDS; // Angular frequency for sine wave
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(MeshTextPlugin::new(
-            (CAMERA_VIEWPORT_HEIGHT / 950.0) * TEXT_SCALE_MULTIPLIER,
-        ))
+        .add_plugins(MeshTextPlugin)
         .add_systems(Update, keyboard_input)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
@@ -111,7 +108,7 @@ fn move_text_vertically(
 fn setup(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 0.0, 450.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.0, 0.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 
@@ -122,8 +119,8 @@ fn spawn_text(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let default_metrics = Metrics {
-        font_size: 14.0,
-        line_height: 16.0,
+        font_size: 0.14,
+        line_height: 0.16,
     };
 
     let blue_material = materials.add(StandardMaterial {
@@ -142,7 +139,7 @@ fn spawn_text(
 
     let attrs2 = Attrs::new().style(Style::Italic);
 
-    let meshes = generate_meshes(
+    let (meshes, _) = generate_meshes(
         InputText::Rich {
             words: vec!["Hello".to_string(), "World".to_string()],
             materials: vec![blue_material, red_material],
@@ -150,12 +147,15 @@ fn spawn_text(
         },
         &mut fonts,
         Parameters {
-            extrusion_depth: 3.0,
+            extrusion_depth: 0.03,
             font_size: default_metrics.font_size,
             line_height: default_metrics.line_height,
             alignment: None,
             max_width: None,
             max_height: None,
+            vertical_alignment: None,
+            horizontal_anchor_point: HorizontalAnchorPoint::Middle,
+            vertical_anchor_point: VerticalAnchorPoint::Middle,
         },
         &mut meshes,
     )
@@ -165,7 +165,7 @@ fn spawn_text(
     for mesh in meshes {
         // Calculate the final spawn transform first, including any horizontal adjustments
         let spawn_transform = mesh.transform.with_translation(Vec3::new(
-            -200.0 + mesh.transform.translation.x, // Apply horizontal shift
+            mesh.transform.translation.x, // Apply horizontal shift
             mesh.transform.translation.y,          // This y is the base for vertical oscillation
             mesh.transform.translation.z,
         ));
@@ -179,7 +179,7 @@ fn spawn_text(
         // `MOVE_AMPLITUDE` will start at the top of the oscillation.
         // `-MOVE_AMPLITUDE` will start at the bottom.
         // `25.0` would start 25 units above the center (if `MOVE_AMPLITUDE` is >= 25).
-        let desired_initial_y_offset = idx as f32 * 5.0;
+        let desired_initial_y_offset = idx as f32 * 0.05;
 
         commands.spawn((
             Mesh3d(mesh.mesh),

@@ -86,6 +86,27 @@ pub struct MeshTextEntry<M: Asset> {
     pub material: Handle<M>,
 }
 
+/// Describes the anchor point relative to the text
+#[derive(Clone, Copy,Debug)]
+pub enum VerticalAnchorPoint {
+    Top,
+    Middle,
+    Bottom,
+}
+/// Describes the anchor point relative to the text
+#[derive(Clone, Copy,Debug)]
+pub enum HorizontalAnchorPoint {
+    Left,
+    Middle,
+    Right,
+}
+#[derive(Clone, Copy,Debug)]
+pub enum VerticalAlign {
+    Top,
+    Middle,
+    Bottom,
+}
+
 pub struct Parameters {
     /// Extrusion depth
     pub extrusion_depth: f32,
@@ -95,6 +116,12 @@ pub struct Parameters {
     pub line_height: f32,
     /// Alignment
     pub alignment: Option<Align>,
+    /// Vertical Alignment
+    pub vertical_alignment: Option<VerticalAlign>,
+    /// Describes the anchor point relative to the text
+    pub horizontal_anchor_point: HorizontalAnchorPoint,
+    /// Describes the anchor point relative to the text
+    pub vertical_anchor_point: VerticalAnchorPoint,
     /// Maximum width of the textbox. Beyond this width, the text will wrap.
     pub max_width: Option<f32>,
     /// Maximum height of the textbox.

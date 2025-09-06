@@ -9,12 +9,9 @@ use bevy::{
 };
 use cosmic_text::Attrs;
 
-use bevy_mesh_text_3d::{InputText, MeshTextPlugin, Parameters, Settings, generate_meshes};
-
-const CAMERA_VIEWPORT_HEIGHT: f32 = 950.0;
-// This factor controls the overall size of text in the world
-// Adjust this to make your text appear at the desired size
-const TEXT_SCALE_MULTIPLIER: f32 = 4.0;
+use bevy_mesh_text_3d::{
+    generate_meshes, HorizontalAnchorPoint, InputText, MeshTextPlugin, Parameters, Settings, VerticalAlign, VerticalAnchorPoint
+};
 
 fn main() {
     App::new()
@@ -39,9 +36,7 @@ fn main() {
             // Can be changed per mesh using the `WireframeColor` component.
             default_color: WHITE.into(),
         })
-        .add_plugins(MeshTextPlugin::new(
-            (CAMERA_VIEWPORT_HEIGHT / 950.0) * TEXT_SCALE_MULTIPLIER,
-        ))
+        .add_plugins(MeshTextPlugin)
         .add_systems(Update, keyboard_input)
         .insert_resource(AmbientLight {
             color: Color::WHITE,
@@ -82,7 +77,7 @@ fn rotate_text(mut query: Query<(&mut Transform, &RotatingText)>, time: Res<Time
 fn setup(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 0.0, 450.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.0, 0.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 
@@ -91,8 +86,11 @@ fn spawn_text(
     mut fonts: ResMut<Settings>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut gizmo_assets: ResMut<Assets<GizmoAsset>>,
 ) {
-    let meshes = generate_meshes(
+    let bounds: Option<Vec2> = None;
+    // let bounds = Some(vec2(1.0, 2.0));
+    let (meshes, size) = generate_meshes(
         InputText::Simple {
             text: "Hello, World!".to_string(),
             material: materials.add(StandardMaterial {
@@ -104,12 +102,15 @@ fn spawn_text(
         },
         &mut fonts,
         Parameters {
-            extrusion_depth: 2.5,
-            font_size: 14.0,
-            line_height: 16.0,
-            alignment: None,
-            max_width: None,
-            max_height: None,
+            extrusion_depth: 0.025,
+            font_size: 0.14,
+            line_height: 0.16,
+            alignment: Some(cosmic_text::Align::Center),
+            vertical_alignment: Some(VerticalAlign::Bottom),
+            max_width: bounds.map(|v| v.x),
+            max_height: bounds.map(|v| v.y),
+            vertical_anchor_point: VerticalAnchorPoint::Middle,
+            horizontal_anchor_point: HorizontalAnchorPoint::Middle,
         },
         &mut meshes,
     )
@@ -120,11 +121,20 @@ fn spawn_text(
             Mesh3d(mesh.mesh),
             MeshMaterial3d(mesh.material),
             mesh.transform.with_translation(Vec3::new(
-                -200.0 + mesh.transform.translation.x,
+                mesh.transform.translation.x,
                 mesh.transform.translation.y,
                 mesh.transform.translation.z,
             )),
             RotatingText::default(),
         ));
     }
+    let mut gizmo = GizmoAsset::new();
+    gizmo.rect(Isometry3d::IDENTITY, size, Color::srgb(0.0, 0.4, 1.0));
+    if let Some(bounds) = bounds {
+        gizmo.rect(Isometry3d::IDENTITY, bounds, Color::srgb(0.0, 0.1, 0.4));
+    }
+    commands.spawn(Gizmo {
+        handle: gizmo_assets.add(gizmo),
+        ..Default::default()
+    });
 }
